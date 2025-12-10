@@ -4,7 +4,7 @@ This project is [part of the MassTransit documentation](https://masstransit-proj
 
 Getting started with MassTransit is fast and easy. This quick start guide uses RabbitMQ with .NET 5. RabbitMQ must be installed, instructions for installing RabbitMQ are included [below](#install-rabbitmq). 
 
-> The [.NET 5 SDK](https://dotnet.microsoft.com/download) should be installed before continuing.
+> The [.NET 9 SDK](https://dotnet.microsoft.com/download) should be installed before continuing.
 
 To create a service using MassTransit, create a worker via the Command Prompt.
 
@@ -244,6 +244,20 @@ If you are using a Mac, RabbitMQ can be installed using [Homebrew](https://brew.
 
 2. Next, run the following command to enable the rabbitmq management plugin: `rabbitmq-plugins enable rabbitmq_management`
 
+## RabbitMQ Configuration
+
+The application uses RabbitMQ for message transport. Ensure the following configuration is set in `appsettings.Development.json`:
+
+```json
+"RabbitMq": {
+  "Host": "localhost",
+  "Username": "guest",
+  "Password": "guest"
+}
+```
+
+These values can be customized as needed. The application reads these settings at runtime to configure the RabbitMQ connection.
+
 ### What is this doing?
 
 If we are going to create a messaging system, we need to create a message. `Message` is a .NET class that will represent our message. Notice that it's just a Plain Old CLR Object (or POCO).
@@ -259,4 +273,3 @@ The `AddMassTransitHostedService(true)` adds a hosted service for MassTransit th
 > This hosted service should be configured _prior_ to any other hosted services that may use the bus.
 
 Lastly, the `Worker` is updated to publish a message every second to the bus, which is subsequently consumed by the consumer.
-
