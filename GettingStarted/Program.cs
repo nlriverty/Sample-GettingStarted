@@ -39,6 +39,10 @@ namespace GettingStarted
 
                     services.AddHostedService<Worker>();
                 })
+                .ConfigureHostOptions(options =>
+                {
+                    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+                })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.Configure(app =>
