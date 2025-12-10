@@ -1,11 +1,14 @@
+using System;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MassTransit;
+using Microsoft.Extensions.Configuration;
 
 namespace GettingStarted
 {
@@ -18,8 +21,14 @@ namespace GettingStarted
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((hostingContext, config) =>
+                {
+                    config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                          .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+                })
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.AddOptions();
                     services.AddHealthChecks();
 
                     services.AddMassTransit(x =>
@@ -33,6 +42,21 @@ namespace GettingStarted
 
                         x.UsingRabbitMq((context, cfg) =>
                         {
+                            var configuration = context.GetRequiredService<IConfiguration>();
+                            var rabbitMqSettings = configuration.GetSection("RabbitMq");
+
+                            cfg.Host(rabbitMqSettings["Host"], h =>
+                            {
+                                h.Username(rabbitMqSettings["Username"]);
+                                h.Password(rabbitMqSettings["Password"]);
+                                h.OnRefreshConnectionFactory = factory =>
+                                {
+                                    factory.UserName = rabbitMqSettings["Username"];
+                                    factory.Password = rabbitMqSettings["Password"];
+                                    return Task.CompletedTask;
+                                };
+                            });
+
                             cfg.ConfigureEndpoints(context);
                         });
                     });
