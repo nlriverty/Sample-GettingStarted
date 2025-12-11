@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MassTransit;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace GettingStarted
 {
@@ -28,6 +29,7 @@ namespace GettingStarted
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.Configure<RabbitMqConfig>(hostContext.Configuration.GetSection("RabbitMq"));
                     services.AddOptions();
                     services.AddHealthChecks();
 
@@ -42,17 +44,23 @@ namespace GettingStarted
 
                         x.UsingRabbitMq((context, cfg) =>
                         {
-                            var configuration = context.GetRequiredService<IConfiguration>();
-                            var rabbitMqSettings = configuration.GetSection("RabbitMq");
+                            var configuration = context.GetRequiredService<IOptionsMonitor<RabbitMqConfig>>();
 
-                            cfg.Host(rabbitMqSettings["Host"], h =>
+                            configuration.OnChange(_ =>
                             {
-                                h.Username(rabbitMqSettings["Username"]);
-                                h.Password(rabbitMqSettings["Password"]);
+                                var busControl = context.GetRequiredService<IBusControl>();
+                                busControl.Stop();
+                                busControl.Start();
+                            });
+
+                            cfg.Host(configuration.CurrentValue.Host, h =>
+                            {
+                                h.Username(configuration.CurrentValue.Username);
+                                h.Password(configuration.CurrentValue.Password);
                                 h.OnRefreshConnectionFactory = factory =>
                                 {
-                                    factory.UserName = rabbitMqSettings["Username"];
-                                    factory.Password = rabbitMqSettings["Password"];
+                                    factory.UserName = configuration.CurrentValue.Username;
+                                    factory.Password = configuration.CurrentValue.Password;
                                     return Task.CompletedTask;
                                 };
                             });
